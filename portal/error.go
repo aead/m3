@@ -17,7 +17,6 @@
 package portal
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"unicode"
@@ -51,38 +50,9 @@ func fatalIf(err *probe.Error, msg string, data ...interface{}) {
 }
 
 func fatal(err *probe.Error, msg string, data ...interface{}) {
-	if globalJSON {
-		errorMsg := errorMessage{
-			Message: msg,
-			Type:    "fatal",
-			Cause: causeMessage{
-				Message: err.ToGoError().Error(),
-				Error:   err.ToGoError(),
-			},
-			SysInfo: err.SysInfo,
-		}
-		if globalDebug {
-			errorMsg.CallTrace = err.CallTrace
-		}
-		json, e := json.MarshalIndent(struct {
-			Status string       `json:"status"`
-			Error  errorMessage `json:"error"`
-		}{
-			Status: "error",
-			Error:  errorMsg,
-		}, "", " ")
-		if e != nil {
-			console.Fatalln(probe.NewError(e))
-		}
-		console.Println(string(json))
-		console.Fatalln()
-	}
-
 	msg = fmt.Sprintf(msg, data...)
 	errmsg := err.String()
-	if !globalDebug {
-		errmsg = err.ToGoError().Error()
-	}
+	errmsg = err.ToGoError().Error()
 
 	// Remove unnecessary leading spaces in generic/detailed error messages
 	msg = strings.TrimSpace(msg)
@@ -122,36 +92,8 @@ func errorIf(err *probe.Error, msg string, data ...interface{}) {
 	if err == nil {
 		return
 	}
-	if globalJSON {
-		errorMsg := errorMessage{
-			Message: fmt.Sprintf(msg, data...),
-			Type:    "error",
-			Cause: causeMessage{
-				Message: err.ToGoError().Error(),
-				Error:   err.ToGoError(),
-			},
-			SysInfo: err.SysInfo,
-		}
-		if globalDebug {
-			errorMsg.CallTrace = err.CallTrace
-		}
-		json, e := json.MarshalIndent(struct {
-			Status string       `json:"status"`
-			Error  errorMessage `json:"error"`
-		}{
-			Status: "error",
-			Error:  errorMsg,
-		}, "", " ")
-		if e != nil {
-			console.Fatalln(probe.NewError(e))
-		}
-		console.Println(string(json))
-		return
-	}
 	msg = fmt.Sprintf(msg, data...)
-	if !globalDebug {
-		console.Errorln(fmt.Sprintf("%s %s", msg, err.ToGoError()))
-		return
-	}
-	console.Errorln(fmt.Sprintf("%s %s", msg, err))
+
+	console.Errorln(fmt.Sprintf("%s %s", msg, err.ToGoError()))
+	return
 }
